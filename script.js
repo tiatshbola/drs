@@ -1,6 +1,6 @@
 /* ===========================================================================
    Mrs Synthetic — logic
-   question banks to your own words.
+   Edit the question banks to your own words.
    =========================================================================== */
 
 /* ---- CONFIG ---- */
