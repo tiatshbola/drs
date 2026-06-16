@@ -1,6 +1,6 @@
 
 
-let classifier, video, label = "";
+let classifier, video, mirror, label = "";
 let sessionStart = 0, waitSeconds = 5;
 let imageModelURL = "https://teachablemachine.withgoogle.com/models/HmMegiSBC/";
 
@@ -27,7 +27,9 @@ let detectedEl, transcriptEl, replyInput;
 
 function preload() {
   ml5.setBackend('webgl');
-  classifier = ml5.imageClassifier(imageModelURL, { flipped: true });
+  // NOTE: ml5's imageClassifier ignores a { flipped } option — flipping must be
+  // done to the pixels we hand it. We do that with the `mirror` buffer below.
+  classifier = ml5.imageClassifier(imageModelURL);
 }
 
 // Get an element by id, or create it if the host page doesn't have one.
@@ -49,8 +51,13 @@ function setup() {
   let cnv = createCanvas(560, 420);
   cnv.parent(box);
 
-  // createCapture's 2nd arg is a getUserMedia constraints object, NOT { flipped }.
-  // (Flipping is handled by ml5's imageClassifier { flipped: true } in preload.)
+  // Offscreen buffer holding a horizontally-MIRRORED copy of the webcam.
+  // Teachable Machine trains on the mirrored "selfie" view, so the model must be
+  // fed mirrored frames too. (ml5 ignores its { flipped } option, so we do it
+  // here.) Classifying the raw camera is what made it read the wrong emotion on
+  // the site even though the model works on Teachable Machine.
+  mirror = createGraphics(560, 420);
+
   video = createCapture(
     { video: true, audio: false },
     () => {                       // success: camera is live
@@ -61,7 +68,7 @@ function setup() {
       // result collapses to one noisy warm-up frame (which reads "Sad/Upset").
       scores = {};
       sessionStart = millis();
-      classifier.classifyStart(video, gotResult);
+      classifyLoop();
     }
   );
   video.size(560, 420);
@@ -80,7 +87,15 @@ function setup() {
 }
 
 function draw() {
-  image(video, 0, 0, width, height);
+  // Keep the mirrored buffer in sync with the webcam, then show/classify it so
+  // what the user sees and what the model sees are both the mirrored view.
+  mirror.push();
+  mirror.translate(mirror.width, 0);
+  mirror.scale(-1, 1);
+  mirror.image(video, 0, 0, mirror.width, mirror.height);
+  mirror.pop();
+  image(mirror, 0, 0, width, height);
+
   // Show the countdown until a winner is locked, then show the final, fixed
   // reading. Gating on sessionBank (not elapsed time) means the readout never
   // flickers during the brief moment between the window ending and the lock.
@@ -90,6 +105,15 @@ function draw() {
   } else {
     detectedEl.html("Reading: " + (label || "\u2014"));
   }
+}
+
+function classifyLoop() {
+  // Continuously classify the MIRRORED buffer using a manual classify→callback
+  // loop, so the model always sees the same mirrored pixels TM trained on.
+  classifier.classify(mirror, (results) => {
+    gotResult(results);
+    classifyLoop();
+  });
 }
 
 function gotResult(results) {
