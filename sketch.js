@@ -55,6 +55,12 @@ function setup() {
     { video: true, audio: false },
     () => {                       // success: camera is live
       detectedEl && detectedEl.html("Camera ready — analysing…");
+      // Start the analysis window NOW that real frames are arriving — not at
+      // the end of setup(). Otherwise the 5s countdown begins at page load and
+      // is eaten by the camera-permission prompt, leaving `scores` empty so the
+      // result collapses to one noisy warm-up frame (which reads "Sad/Upset").
+      scores = {};
+      sessionStart = millis();
       classifier.classifyStart(video, gotResult);
     }
   );
@@ -71,8 +77,6 @@ function setup() {
 
   ensure('replyBtn', 'button').mousePressed(handleReply);
   ensure('beginBtn', 'button').mousePressed(restart);
-
-  sessionStart = millis();
 }
 
 function draw() {
