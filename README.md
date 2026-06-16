@@ -52,13 +52,6 @@ python -m http.server 8000
 Then open http://localhost:8000 and allow camera access when prompted.
 
 
-Project Structure
-
-FileDescriptionindex.htmlMain page markup and library importssketch.jsCurrent project implementationsketch.original.jsOriginal prototype, preserved for referencescript.jsAdditional page functionalitystyle.cssProject styling
-
-
-Note: the styling file was originally named style (1).css. Spaces and parentheses in filenames cause problems in git and in URL references, so it's renamed to style.css above. If you keep the original name, remember to update the <link> in index.html to match.
-
 
 
 
@@ -66,10 +59,10 @@ Project Evolution
 
 The project exists in two versions.
 
-Current — sketch.js
+Current , sketch.js
 HTML-based interface, conversation transcript, timed facial-expression analysis, restart functionality, and an improved interaction flow.
 
-Original prototype — sketch.original.js
+Original prototype , sketch.original.js
 Drew interface elements directly onto the canvas and used a single p5.js input box. Served as the initial proof of concept.
 
 
