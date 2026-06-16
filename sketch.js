@@ -81,9 +81,12 @@ function setup() {
 
 function draw() {
   image(video, 0, 0, width, height);
-  let elapsed = (millis() - sessionStart) / 1000;
-  if (elapsed < waitSeconds) {
-    detectedEl.html("Analysing\u2026 " + ceil(waitSeconds - elapsed));
+  // Show the countdown until a winner is locked, then show the final, fixed
+  // reading. Gating on sessionBank (not elapsed time) means the readout never
+  // flickers during the brief moment between the window ending and the lock.
+  if (sessionBank === null) {
+    let remaining = ceil(waitSeconds - (millis() - sessionStart) / 1000);
+    detectedEl.html("Analysing\u2026 " + max(remaining, 0));
   } else {
     detectedEl.html("Reading: " + (label || "\u2014"));
   }
@@ -94,6 +97,11 @@ function gotResult(results) {
 
   let top = results[0];
   for (let r of results) if (r.confidence > top.confidence) top = r;
+
+  // Once a winner is locked in, ignore further frames so the readout settles
+  // on one emotion instead of flickering between Happy and Sad.
+  if (sessionBank !== null) return;
+
   label = top.label;
 
   let elapsed = (millis() - sessionStart) / 1000;
@@ -102,13 +110,12 @@ function gotResult(results) {
     return;
   }
 
-  if (sessionBank === null) {
-    label = pickWinner();
-    sessionBank = bankFor(label);
-    questionIndex = 0;
-    transcript.push(["Dr Synthetica", sessionBank[questionIndex]]);
-    renderTranscript();
-  }
+  // Analysis window is over and nothing is locked yet — commit to one emotion.
+  label = pickWinner();
+  sessionBank = bankFor(label);
+  questionIndex = 0;
+  transcript.push(["Dr Synthetica", sessionBank[questionIndex]]);
+  renderTranscript();
 }
 
 function pickWinner() {
