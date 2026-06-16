@@ -68,7 +68,9 @@ function setup() {
       // result collapses to one noisy warm-up frame (which reads "Sad/Upset").
       scores = {};
       sessionStart = millis();
-      classifyLoop();
+      // classifyStart re-reads the mirror buffer every frame (requestAnimationFrame),
+      // so the model continuously sees the mirrored view it was trained on.
+      classifier.classifyStart(mirror, gotResult);
     }
   );
   video.size(560, 420);
@@ -96,24 +98,18 @@ function draw() {
   mirror.pop();
   image(mirror, 0, 0, width, height);
 
-  // Show the countdown until a winner is locked, then show the final, fixed
-  // reading. Gating on sessionBank (not elapsed time) means the readout never
-  // flickers during the brief moment between the window ending and the lock.
-  if (sessionBank === null) {
-    let remaining = ceil(waitSeconds - (millis() - sessionStart) / 1000);
-    detectedEl.html("Analysing\u2026 " + max(remaining, 0));
+  if (sessionStart === 0) {
+    // Camera not live yet.
+    detectedEl.html("Starting camera\u2026");
+  } else if (sessionBank === null) {
+    // ANALYSING: show the LIVE reading flickering between Happy / Sad-Upset,
+    // plus the countdown, so you can see it detecting in real time.
+    let remaining = max(ceil(waitSeconds - (millis() - sessionStart) / 1000), 0);
+    detectedEl.html("Analysing\u2026 " + remaining + " \u00b7 " + (label || "\u2026"));
   } else {
-    detectedEl.html("Reading: " + (label || "\u2014"));
+    // LOCKED: settled on one final emotion \u2014 stops flickering here.
+    detectedEl.html("Final: " + label);
   }
-}
-
-function classifyLoop() {
-  // Continuously classify the MIRRORED buffer using a manual classify→callback
-  // loop, so the model always sees the same mirrored pixels TM trained on.
-  classifier.classify(mirror, (results) => {
-    gotResult(results);
-    classifyLoop();
-  });
 }
 
 function gotResult(results) {
