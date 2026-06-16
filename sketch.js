@@ -2,7 +2,7 @@
 
 let classifier, video, mirror, label = "";
 let sessionStart = 0, waitSeconds = 5;
-let imageModelURL = "https://teachablemachine.withgoogle.com/models/HmMegiSBC/";
+let imageModelURL = "https://teachablemachine.withgoogle.com/models/JMJq5F3CQ/";
 
 let responses = {
   happy: [
